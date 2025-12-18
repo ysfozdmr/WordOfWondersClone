@@ -22,6 +22,18 @@
         {
           "name": "shuffle",
           "srcs": "assets/shuffle.png"
+        },
+        {
+          "name": "playNow",
+          "srcs": "assets/install0.png"
+        },
+        {
+          "name": "orangePanel",
+          "srcs": "assets/orangePanel.png"
+        },
+        {
+          "name": "hand",
+          "srcs": "assets/hand.png"
         }
       ]
     },
