@@ -32,6 +32,10 @@
           "srcs": "assets/orangePanel.png"
         },
         {
+          "name": "greenPanel",
+          "srcs": "assets/greenPanel.png"
+        },
+        {
           "name": "hand",
           "srcs": "assets/hand.png"
         }
