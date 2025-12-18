@@ -36,6 +36,9 @@ export default class Game extends Container {
     this.activeButtons = [];
     this.found = new Set();
 
+    this.tutorialLoopCount = 0;   // kaç tur tutorial gezdi
+    this.autoplayAfterLoops = 2;  // 2 turdan sonra 3.’de autoplay
+
     // UI containers
     this.gridContainer = new Container();
     this.addChild(this.gridContainer);
@@ -46,7 +49,7 @@ export default class Game extends Container {
     this.autoplayTimeout = null;
     this.isAutoplaying = false;
 
-    this.autoplayStepDuration = 0.55;
+    this.autoplayStepDuration = 1.2;
 
     // Grid + Tray
     this.buildExactGridAndSlots();
@@ -63,6 +66,9 @@ export default class Game extends Container {
     this.on("pointerupoutside", this.onUp, this);
 
     this.createWordPreview();
+
+
+
 
     this.buildTutorialHand();
     this.scheduleTutorialHand();
@@ -263,11 +269,15 @@ export default class Game extends Container {
     });
     // 🔥 Shuffle her zaman EN ÜSTTE olsun
     if (this.shuffleBtn) {
-      this.trayContainer.removeChild(this.shuffleBtn);
-      this.trayContainer.addChild(this.shuffleBtn);
-
       this.shuffleBtn.x = this.trayCenter.x;
       this.shuffleBtn.y = this.trayCenter.y;
+
+      // tray child sırası: bg (0), line (1), shuffle (2), harf butonları (3+)
+      // bu sırayı korumak için index ayarlıyoruz:
+      if (this.line && this.trayContainer.children.includes(this.line)) {
+        // shuffle'ı line'ın üstüne koy (ama butonlardan aşağıda kalsın)
+        this.trayContainer.setChildIndex(this.shuffleBtn, this.trayContainer.getChildIndex(this.line) + 1);
+      }
     }
 
   }
@@ -340,9 +350,10 @@ export default class Game extends Container {
   startSwipe(btn, fromAutoplay = false) {
     if (this.isGameOver) return;
 
-    // autoplay sırasında kullanıcı engelli
+    // autoplay sırasında kullanıcı dokunamasın (ama autoplay çağırabilsin)
     if (this.isAutoplaying && !fromAutoplay) return;
 
+    // kullanıcı başladıysa tutorial/autoplay kes
     if (!fromAutoplay) {
       this.hideTutorialHand();
       this.cancelAutoplay();
@@ -352,6 +363,7 @@ export default class Game extends Container {
     this.isSwiping = true;
     this.addButton(btn);
   }
+
 
 
 
@@ -390,7 +402,7 @@ export default class Game extends Container {
     this.updateWordPreview();
   }
 
-  drawLine(p) {
+  drawLine(handPos) {
     if (
       (!this.isSwiping && !this.isAutoplaying) ||
       this.activeButtons.length === 0
@@ -401,15 +413,21 @@ export default class Game extends Container {
       width: 10,
       color: 0xff9f1a,
       cap: "round",
+      join: "round",
     });
 
-    this.activeButtons.forEach((b, i) => {
-      if (i === 0) this.line.moveTo(b.x, b.y);
-      else this.line.lineTo(b.x, b.y);
-    });
+    // 🔥 SADECE SABİT NOKTALARI ÇİZ (kilitlenen harfler)
+    if (this.activeButtons.length > 0) {
+      this.line.moveTo(this.activeButtons[0].x, this.activeButtons[0].y);
 
-    if (p) {
-      this.line.lineTo(p.x, p.y);
+      for (let i = 1; i < this.activeButtons.length; i++) {
+        this.line.lineTo(this.activeButtons[i].x, this.activeButtons[i].y);
+      }
+    }
+
+    // ✋ ELİN UCUNA DOĞRU UZAT
+    if (handPos) {
+      this.line.lineTo(handPos.x, handPos.y);
     }
   }
 
@@ -596,35 +614,75 @@ export default class Game extends Container {
   /* ================= Game End ================= */
 
   endGame() {
-    // Artık swipe yapılamasın
     this.isGameOver = true;
 
-    // Input'u kilitle
+    // input kapat
     this.eventMode = "none";
 
-    // Küçük gecikme (son kelime animasyonu bitsin)
-    gsap.delayedCall(0.4, () => {
-      const complete = new Text("LEVEL COMPLETE", {
-        fill: 0xffffff,
-        fontSize: 36,
-        fontWeight: "bold",
+    // tutorial / autoplay kesin kapat
+    this.hideTutorialHand();
+    this.cancelAutoplay();
 
-      });
-
-      complete.anchor.set(0.5);
-      complete.x = GAME_WIDTH / 2;
-      complete.y = GAME_HEIGHT / 2;
-
-      this.addChild(complete);
-
-      gsap.from(complete.scale, {
-        x: 0,
-        y: 0,
-        duration: 0.6,
-        ease: "back.out",
-      });
+    // 🔥 son kelime gridde kalsın diye BEKLE
+    gsap.delayedCall(0.8, () => {
+      this.showEndScreen();
     });
   }
+  showEndScreen() {
+    // =========================
+    // GRID + TRAY GİZLE
+    // =========================
+    this.gridContainer.visible = false;
+    this.trayContainer.visible = false;
+    this.wordPreview.visible = false;
+    this.line.clear();
+
+    // =========================
+    // END TITLE
+    // =========================
+    const title = new Text("WORDS OF\nWONDERS", {
+      fill: 0xffffff,
+      fontSize: 58,
+      fontWeight: "bold",
+      align: "center",
+      fontFamily: "Sniglet",
+    });
+
+    title.anchor.set(0.5);
+    title.x = GAME_WIDTH / 2;
+    title.y = 140;
+    this.addChild(title);
+
+    gsap.from(title, {
+      alpha: 0,
+      y: title.y - 25,
+      duration: 0.6,
+      ease: "power2.out",
+    });
+
+    // =========================
+    // PLAY NOW AYARLARI
+    // =========================
+    if (this.playNow) {
+      this.playNow.visible = true;
+
+      // 🔥 daha yukarı
+      this.playNow.y = GAME_HEIGHT - 240;
+
+      // 🔥 biraz daha büyük
+      this.playNow.scale.set(1.30);
+
+      // belirme animasyonu
+      gsap.from(this.playNow, {
+        alpha: 0,
+        scale: 0.9,
+        duration: 0.35,
+        ease: "power2.out",
+      });
+    }
+  }
+
+
   /* ================= Sprite and Textures ================= */
 
   async loadBackground() {
@@ -705,30 +763,37 @@ export default class Game extends Container {
   scheduleTutorialHand() {
     clearTimeout(this.tutorialTimeout);
 
+    // oyun bitti / autoplay açıkken tutorial schedule etme
+    if (this.isGameOver || this.isAutoplaying) return;
+
     this.tutorialTimeout = setTimeout(() => {
       this.showTutorialHand();
-    }, 5000); // ⏱️ 2.5 saniye boşta kalınca
+    }, 7000); // istersen 2000 yap
   }
 
   hideTutorialHand() {
     clearTimeout(this.tutorialTimeout);
-    if (this.tutorialHint) {
-      this.tutorialHint.visible = false;
+
+    if (this.tutorialHint) this.tutorialHint.visible = false;
+
+    if (this.handTL) {
+      this.handTL.kill();
+      this.handTL = null;
     }
-    gsap.killTweensOf(this.hand);
+
     if (this.hand) {
       gsap.killTweensOf(this.hand);
       gsap.to(this.hand, {
         alpha: 0,
-        duration: 0.25,
+        duration: 0.2,
         ease: "sine.in",
         onComplete: () => {
           this.hand.visible = false;
         },
       });
-
     }
   }
+
   getTutorialWord() {
     return this.words.find(w => !this.found.has(w));
   }
@@ -750,20 +815,27 @@ export default class Game extends Container {
     return result;
   }
   showTutorialHand() {
+    if (this.isGameOver) return;
+    if (this.isAutoplaying) return;
+
     const word = this.getTutorialWord();
     if (!word) return;
 
+    const btns = this.getButtonsForWord(word);
+    if (!btns || btns.length === 0) return;
+
+    // hint panel
     this.updateTutorialHint(word);
     if (this.tutorialHint) this.tutorialHint.visible = true;
 
-    const btns = this.getButtonsForWord(word);
-    if (!btns) return;
+    // eski timeline’ı öldür
+    if (this.handTL) {
+      this.handTL.kill();
+      this.handTL = null;
+    }
 
-    // ✅ varsa eski timeline’ı öldür
-    if (this.handTL) this.handTL.kill();
-
-    this.hand.visible = true;
-    this.hand.alpha = 1;
+    // her yeni kelime için döngüyü sıfırla
+    this.tutorialLoopCount = 0;
 
     const toHandPos = (btn) => {
       const gp = btn.getGlobalPosition();   // global
@@ -771,24 +843,43 @@ export default class Game extends Container {
       return { x: lp.x, y: lp.y - 10 };
     };
 
-    // ilk harfe git
+    // ilk harfe koy + belirme
     const firstP = toHandPos(btns[0]);
+    this.hand.visible = true;
+    this.hand.alpha = 0;
     this.hand.position.set(firstP.x, firstP.y);
+    gsap.to(this.hand, { alpha: 1, duration: 0.18, ease: "sine.out" });
 
-    // timeline
-    this.handTL = gsap.timeline({ repeat: -1, repeatDelay: 1.2 });
+    // timeline: 1 kelime turu = btns boyunca gezmek
+    this.handTL = gsap.timeline({
+      repeat: -1,
+      repeatDelay: 0.7,
+      onRepeat: () => {
+        this.tutorialLoopCount++;
+
+        // 2 tur bitti → 3. tur başlayacağı anda autoplay başlat
+        if (this.tutorialLoopCount >= this.autoplayAfterLoops && !this.isAutoplaying) {
+          // tutorial hareketini durdur
+          if (this.handTL) {
+            this.handTL.kill();
+            this.handTL = null;
+          }
+          this.startAutoplay();
+        }
+      },
+    });
 
     btns.forEach((btn, i) => {
       this.handTL.to(this.hand, {
         x: () => toHandPos(btn).x,
         y: () => toHandPos(btn).y,
-        duration: 0.7,
-        ease: "sine.inOut",
-      }, i === 0 ? 0 : "+=0.18");
+        duration: 0.7,          // tutorial hızı
+        ease: "power1.inOut",
+      }, i === 0 ? 0 : "+=0.04");
     });
-    this.scheduleAutoplay();
-
   }
+
+
 
 
   buildTutorialHintPanel() {
@@ -847,9 +938,16 @@ export default class Game extends Container {
   cancelAutoplay() {
     clearTimeout(this.autoplayTimeout);
     this.isAutoplaying = false;
+
+    if (this.autoplayTL) {
+      this.autoplayTL.kill();
+      this.autoplayTL = null;
+    }
   }
 
+
   startAutoplay() {
+    if (this.isGameOver) return;
     if (this.isAutoplaying) return;
 
     const word = this.getTutorialWord();
@@ -859,92 +957,96 @@ export default class Game extends Container {
     if (!btns || btns.length === 0) return;
 
     this.isAutoplaying = true;
-    this.isSwiping = false;
 
-    // varsa eski timeline'ı öldür
-    if (this.autoplayTL) {
-      this.autoplayTL.kill();
-      this.autoplayTL = null;
+    // tutorial timeline kapat
+    if (this.handTL) {
+      this.handTL.kill();
+      this.handTL = null;
     }
 
-    // swipe state'i sıfırla
+    // swipe reset
     this.resetSwipe();
+    this.isSwiping = true;
 
-    // 🔥 1) ELİ ÖNCE İLK HARFE GÖTÜR
     const toLocalPos = (btn) => {
       const gp = btn.getGlobalPosition();
       return this.toLocal(gp);
     };
 
+    // -------------------------
+    // 1️⃣ İLK HARF (EL ÜSTÜNE GELİR)
+    // -------------------------
     const firstPos = toLocalPos(btns[0]);
     this.hand.visible = true;
     this.hand.alpha = 1;
     this.hand.position.set(firstPos.x, firstPos.y - 10);
 
-    // İlk karede çizginin görünmesi için başlangıç pozisyonunu çiz
+    // çizgi elin ucunda başlasın
     this.drawLine({ x: this.hand.x, y: this.hand.y });
 
-    // 🔥 2) SONRA SWIPE'I BAŞLAT (line artık doğru yerden başlar)
-    this.startSwipe(btns[0], true);
+    // ilk harf EL GELDİKTEN SONRA
+    this.addButton(btns[0]);
 
-    // 🔥 3) AUTOPLAY TIMELINE (İLK HARF HARİÇ)
-    this.autoplayTL = gsap.timeline({
-      onUpdate: () => {
-        this.drawLine({ x: this.hand.x, y: this.hand.y });
-      }
-    });
+    // -------------------------
+    // 2️⃣ AUTOPLAY TIMELINE
+    // -------------------------
+    if (this.autoplayTL) {
+      this.autoplayTL.kill();
+    }
 
-    btns.forEach((btn, i) => {
-      if (i === 0) return; // 🔥 ilk harfi ATLA
+    this.autoplayTL = gsap.timeline();
 
+    // 2. harften itibaren çizerek git
+    for (let i = 1; i < btns.length; i++) {
+      const btn = btns[i];
       const p = toLocalPos(btn);
 
       this.autoplayTL.to(this.hand, {
         x: p.x,
         y: p.y - 10,
         duration: this.autoplayStepDuration,
-        ease: "sine.inOut",
-        onStart: () => {
-          this.addButton(btn);
-          // Yeni harfi hemen bağla ki çizgi parmağı beklemeden güncellensin
+        ease: "power1.inOut",
+
+        // ✋ EL HAREKET EDERKEN ÇİZGİ UZAR
+        onUpdate: () => {
           this.drawLine({ x: this.hand.x, y: this.hand.y });
+        },
+
+        // 🔥 EL VARINCA HARF EKLENİR
+        onComplete: () => {
+          this.addButton(btn);
         }
       });
-    });
+    }
 
-    // 🔥 4) AUTOPLAY BİTİŞ
+    // -------------------------
+    // 3️⃣ BİTİŞ
+    // -------------------------
     this.autoplayTL.call(() => {
       this.finishAutoplay();
     });
   }
 
+
+
   finishAutoplay() {
-    // autoplay timeline durdur
     if (this.autoplayTL) {
       this.autoplayTL.kill();
       this.autoplayTL = null;
     }
 
-    // autoplay state kapat
-    this.isAutoplaying = false;
-
-    // 🔥 onUp çalışabilsin diye
+    // 🔥 son harfin seçili hali GÖRÜNSÜN
     this.isSwiping = true;
 
-    // line temizle
-    this.line.clear();
+    gsap.delayedCall(0.18, () => {
+      this.onUp();
 
-    // kelimeyi finalize et (REVEAL BURADA)
-    this.onUp();
+      this.isAutoplaying = false;
 
-    // hand + panel kaldır
-    this.hideTutorialHand();
-
-    // yeni tutorial kelimesi için tekrar planla
-    this.scheduleTutorialHand();
+      this.hideTutorialHand();
+      this.scheduleTutorialHand();
+    });
   }
-
-
 
 
 
