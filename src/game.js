@@ -1,11 +1,8 @@
-// game.js
-// v4 – Exact grid (senin istediğin şekil) + Swipe + Line + Center Shuffle button (STABLE)
 
 import { Container, Graphics, Text, Sprite, Assets, Texture } from "pixi.js";
 import gsap from "gsap";
 import { GAME_WIDTH, GAME_HEIGHT } from ".";
 
-// Eğer senden "0,0,GOLD,H|..." formatı gelirse bunu array'e çeviriyoruz:
 function parseWords(input) {
   if (Array.isArray(input)) return input;
   if (typeof input === "string") {
@@ -19,7 +16,7 @@ function parseWords(input) {
 
 const levelData = {
   lvlLetters: "G,O,D,L",
-  lvlWords: ["GOLD", "GOD", "DOG", "LOG"], // veya: "0,0,GOLD,H|0,0,GOD,V|..."
+  lvlWords: ["GOLD", "GOD", "DOG", "LOG"], 
 };
 
 export default class Game extends Container {
@@ -36,10 +33,10 @@ export default class Game extends Container {
     this.activeButtons = [];
     this.found = new Set();
 
-    this.tutorialLoopCount = 0;   // kaç tur tutorial gezdi
-    this.autoplayAfterLoops = 2;  // 2 turdan sonra 3.’de autoplay
+    this.tutorialLoopCount = 0;   
+    this.autoplayAfterLoops = 2;  
 
-    // UI containers
+   
     this.gridContainer = new Container();
     this.addChild(this.gridContainer);
 
@@ -90,7 +87,7 @@ export default class Game extends Container {
       MID: { id: "MID", x: 2, y: 0, dir: "V", len: 3 },
     };
 
-    // ---- word-slot mapping (AYNI, DOKUNMADIM) ----
+   
     const words = [...this.words];
     const top =
       words.find(w => w.length === 4) ||
@@ -109,7 +106,7 @@ export default class Game extends Container {
     this.wordToSlot.set(bottom, "BOTTOM");
 
     // ---- GRID LAYOUT ----
-    const cellSize = 72;     // 🔥 biraz büyüttük
+    const cellSize = 72;   
     const gap = 14;
 
     const cols = 4;
@@ -136,10 +133,10 @@ export default class Game extends Container {
       gfx.x = startX + gx * (cellSize + gap) + cellSize / 2;
       gfx.y = startY + gy * (cellSize + gap) + cellSize / 2;
 
-      // ---- TEXT (NET, STABİL) ----
+      // ---- TEXT  ----
       const txt = new Text("", {
         fill: 0x333333,
-        fontSize: 55,          // 🔥 SABİT VE BÜYÜK
+        fontSize: 55,          
         fontWeight: "bold",
 
       });
@@ -151,7 +148,7 @@ export default class Game extends Container {
         b.x + b.width / 2,
         b.y + b.height / 2
       );
-      txt.scale.set(2.5);       // 🔴 GARANTİ
+      txt.scale.set(2.5);      
 
       this.gridContainer.addChild(gfx);
 
@@ -198,7 +195,7 @@ export default class Game extends Container {
     const shuffle = new Sprite(Texture.from("assets/shuffle.png"));
     shuffle.anchor.set(0.5);
 
-    // 🔥 boyut ver (PNG büyük gelir)
+   
     shuffle.width = 48;
     shuffle.height = 48;
 
@@ -217,7 +214,7 @@ export default class Game extends Container {
   }
 
   layoutTrayButtons() {
-    // sadece eski HARF butonlarını kaldır
+    
     for (const b of this.buttons) {
       this.trayContainer.removeChild(b);
     }
@@ -237,11 +234,11 @@ export default class Game extends Container {
       btn.cursor = "pointer";
       btn.letter = l;
 
-      // 🔵 circle0.png (normalde GİZLİ)
+      
       const circle = new Sprite(Texture.from("assets/circle.png"));
       circle.anchor.set(0.5);
 
-      // 🔥 SABİT BOYUT
+      
       circle.width = 70;
       circle.height = 70;
 
@@ -249,7 +246,7 @@ export default class Game extends Container {
       btn.addChild(circle);
       btn.circle = circle;
 
-      // 🔤 TEXT (normalde TURUNCU)
+    
       const txt = new Text(l, {
         fill: 0xff9f1a,
         fontSize: 46,
@@ -267,15 +264,14 @@ export default class Game extends Container {
       this.buttons.push(btn);
       this.trayContainer.addChild(btn);
     });
-    // 🔥 Shuffle her zaman EN ÜSTTE olsun
+   
     if (this.shuffleBtn) {
       this.shuffleBtn.x = this.trayCenter.x;
       this.shuffleBtn.y = this.trayCenter.y;
 
-      // tray child sırası: bg (0), line (1), shuffle (2), harf butonları (3+)
-      // bu sırayı korumak için index ayarlıyoruz:
+
       if (this.line && this.trayContainer.children.includes(this.line)) {
-        // shuffle'ı line'ın üstüne koy (ama butonlardan aşağıda kalsın)
+       
         this.trayContainer.setChildIndex(this.shuffleBtn, this.trayContainer.getChildIndex(this.line) + 1);
       }
     }
@@ -293,7 +289,7 @@ export default class Game extends Container {
     const { x: cx, y: cy } = this.trayCenter;
     const r = this.trayRadius;
 
-    // 1) Harfleri merkeze topla
+
     this.buttons.forEach((btn, i) => {
       gsap.to(btn, {
         x: cx,
@@ -304,17 +300,14 @@ export default class Game extends Container {
       });
     });
 
-    // ❌ 2) this.shuffleBtn rotation KALDIR (buton dönmesin)
-    // gsap.to(this.shuffleBtn, { rotation: this.shuffleBtn.rotation + Math.PI * 2, ... });
-
-    // ✅ 3) BUTONLARI gerçekten karıştır (pozisyonlar değişsin)
+  
     const shuffledButtons = [...this.buttons];
     for (let i = shuffledButtons.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffledButtons[i], shuffledButtons[j]] = [shuffledButtons[j], shuffledButtons[i]];
     }
 
-    // 4) Yeni hedef pozisyonları hesapla (slot pozisyonları sabit)
+  
     const positions = this.buttons.map((_, i) => {
       const angle = (Math.PI * 2 / this.buttons.length) * i - Math.PI / 2;
       return {
@@ -323,7 +316,7 @@ export default class Game extends Container {
       };
     });
 
-    // 5) Merkezden dağıt: karışmış butonları yeni slotlara gönder
+
     gsap.delayedCall(0.28, () => {
       shuffledButtons.forEach((btn, i) => {
         gsap.to(btn, {
@@ -335,10 +328,10 @@ export default class Game extends Container {
         });
       });
 
-      // önemli: bundan sonra hit-test vb. için sıralama da karışmış olsun
+      
       this.buttons = shuffledButtons;
-      // ✅ shuffle animasyonu bittikten sonra tutorial'ı yeniden schedule et
-      const total = 0.45 + (this.buttons.length - 1) * 0.03; // dağıtma süresi
+ 
+      const total = 0.45 + (this.buttons.length - 1) * 0.03; 
       gsap.delayedCall(total + 0.05, () => this.scheduleTutorialHand());
     });
 
@@ -350,10 +343,8 @@ export default class Game extends Container {
   startSwipe(btn, fromAutoplay = false) {
     if (this.isGameOver) return;
 
-    // autoplay sırasında kullanıcı dokunamasın (ama autoplay çağırabilsin)
     if (this.isAutoplaying && !fromAutoplay) return;
 
-    // kullanıcı başladıysa tutorial/autoplay kes
     if (!fromAutoplay) {
       this.hideTutorialHand();
       this.cancelAutoplay();
@@ -372,7 +363,7 @@ export default class Game extends Container {
 
     const p = e.global;
 
-    // Manual hit-test on letter buttons
+
     for (const btn of this.buttons) {
       if (this.activeButtons.includes(btn)) continue;
       const dx = p.x - btn.x;
@@ -394,9 +385,9 @@ export default class Game extends Container {
     this.activeButtons.push(btn);
     this.activeWord += btn.letter;
 
-    // 🔥 swipe görünümü
+
     btn.circle.visible = true;
-    btn.circle.tint = 0xff9f1a;   // ← BUNU EKLEDİN
+    btn.circle.tint = 0xff9f1a;   
     btn.txt.style.fill = 0xffffff;
 
     this.updateWordPreview();
@@ -416,7 +407,7 @@ export default class Game extends Container {
       join: "round",
     });
 
-    // 🔥 SADECE SABİT NOKTALARI ÇİZ (kilitlenen harfler)
+ 
     if (this.activeButtons.length > 0) {
       this.line.moveTo(this.activeButtons[0].x, this.activeButtons[0].y);
 
@@ -425,7 +416,7 @@ export default class Game extends Container {
       }
     }
 
-    // ✋ ELİN UCUNA DOĞRU UZAT
+
     if (handPos) {
       this.line.lineTo(handPos.x, handPos.y);
     }
@@ -477,7 +468,7 @@ export default class Game extends Container {
     this.hideWordPreview();
 
     targets.forEach((target, index) => {
-      // 🔥 BEYAZ UÇAN HARF
+    
       const flyTxt = new Text(target.ch, {
         fill: 0xffffff,
         fontSize: 32,
@@ -503,7 +494,7 @@ export default class Game extends Container {
         ease: "power2.inOut",
 
         onUpdate: function () {
-          // 🔥 %65'e gelince cell turunculaşsın
+        
           if (this.progress() > 0.65 && !target.cell._highlighted) {
             target.cell._highlighted = true;
             target.cell.gfx.tint = 0xff9f1a;
@@ -511,7 +502,7 @@ export default class Game extends Container {
         },
 
         onComplete: () => {
-          // grid yazısı
+     
           target.cell.txt.text = target.ch;
           target.cell.txt.style.fill = 0xffffff;
 
@@ -616,30 +607,25 @@ export default class Game extends Container {
   endGame() {
     this.isGameOver = true;
 
-    // input kapat
+   
     this.eventMode = "none";
 
-    // tutorial / autoplay kesin kapat
+
     this.hideTutorialHand();
     this.cancelAutoplay();
 
-    // 🔥 son kelime gridde kalsın diye BEKLE
     gsap.delayedCall(0.8, () => {
       this.showEndScreen();
     });
   }
   showEndScreen() {
-    // =========================
-    // GRID + TRAY GİZLE
-    // =========================
+  
     this.gridContainer.visible = false;
     this.trayContainer.visible = false;
     this.wordPreview.visible = false;
     this.line.clear();
 
-    // =========================
-    // END TITLE
-    // =========================
+
     const title = new Text("WORDS OF\nWONDERS", {
       fill: 0xffffff,
       fontSize: 58,
@@ -660,19 +646,17 @@ export default class Game extends Container {
       ease: "power2.out",
     });
 
-    // =========================
-    // PLAY NOW AYARLARI
-    // =========================
+
     if (this.playNow) {
       this.playNow.visible = true;
 
-      // 🔥 daha yukarı
+  
       this.playNow.y = GAME_HEIGHT - 240;
 
-      // 🔥 biraz daha büyük
+
       this.playNow.scale.set(1.30);
 
-      // belirme animasyonu
+  
       gsap.from(this.playNow, {
         alpha: 0,
         scale: 0.9,
@@ -706,37 +690,37 @@ export default class Game extends Container {
   }
 
   buildPlayNow() {
-    // container (ikon + text birlikte büyüsün)
+   
     const cta = new Container();
 
-    // 🔥 PNG (manifest'teki)
+  
     const bg = new Sprite(Texture.from("assets/install0.png"));
     bg.anchor.set(0.5);
 
-    // boyut (PNG büyük gelirse diye)
+
     bg.width = 220;
     bg.height = 64;
 
-    // 🔤 TEXT
+   
     const txt = new Text("PLAY NOW!", {
       fill: 0xffffff,
       fontSize: 28,
       fontWeight: "bold",
-      //fontFamily: "Sniglet",
+     
     });
     txt.anchor.set(0.5);
 
-    // container’a ekle
+
     cta.addChild(bg, txt);
 
-    // 📍 EKRANIN EN ALTI
+ 
     cta.x = GAME_WIDTH / 2;
     cta.y = GAME_HEIGHT - 65;
 
-    // sahneye ekle (en üstte kalsın)
+   
     this.addChild(cta);
 
-    // 🔁 PULSE ANİMASYONU (sürekli)
+   
     gsap.to(cta.scale, {
       x: 1.08,
       y: 1.08,
@@ -746,13 +730,13 @@ export default class Game extends Container {
       ease: "sine.inOut",
     });
 
-    // referans (istersen sonra kullanırsın)
+  
     this.playNow = cta;
   }
   /* ================= Tutorial and Auto Play ================= */
   buildTutorialHand() {
     this.hand = new Sprite(Texture.from("assets/hand.png"));
-    this.hand.anchor.set(0.2, 0.1); // parmak ucu gibi dursun
+    this.hand.anchor.set(0.2, 0.1); 
     this.hand.scale.set(0.4);
     this.hand.visible = false;
 
@@ -763,12 +747,12 @@ export default class Game extends Container {
   scheduleTutorialHand() {
     clearTimeout(this.tutorialTimeout);
 
-    // oyun bitti / autoplay açıkken tutorial schedule etme
+   
     if (this.isGameOver || this.isAutoplaying) return;
 
     this.tutorialTimeout = setTimeout(() => {
       this.showTutorialHand();
-    }, 7000); // istersen 2000 yap
+    }, 7000); 
   }
 
   hideTutorialHand() {
@@ -824,42 +808,41 @@ export default class Game extends Container {
     const btns = this.getButtonsForWord(word);
     if (!btns || btns.length === 0) return;
 
-    // hint panel
+ 
     this.updateTutorialHint(word);
     if (this.tutorialHint) this.tutorialHint.visible = true;
 
-    // eski timeline’ı öldür
+
     if (this.handTL) {
       this.handTL.kill();
       this.handTL = null;
     }
 
-    // her yeni kelime için döngüyü sıfırla
     this.tutorialLoopCount = 0;
 
     const toHandPos = (btn) => {
-      const gp = btn.getGlobalPosition();   // global
-      const lp = this.toLocal(gp);          // Game local
+      const gp = btn.getGlobalPosition();   
+      const lp = this.toLocal(gp);         
       return { x: lp.x, y: lp.y - 10 };
     };
 
-    // ilk harfe koy + belirme
+  
     const firstP = toHandPos(btns[0]);
     this.hand.visible = true;
     this.hand.alpha = 0;
     this.hand.position.set(firstP.x, firstP.y);
     gsap.to(this.hand, { alpha: 1, duration: 0.18, ease: "sine.out" });
 
-    // timeline: 1 kelime turu = btns boyunca gezmek
+   
     this.handTL = gsap.timeline({
       repeat: -1,
       repeatDelay: 0.7,
       onRepeat: () => {
         this.tutorialLoopCount++;
 
-        // 2 tur bitti → 3. tur başlayacağı anda autoplay başlat
+      
         if (this.tutorialLoopCount >= this.autoplayAfterLoops && !this.isAutoplaying) {
-          // tutorial hareketini durdur
+          
           if (this.handTL) {
             this.handTL.kill();
             this.handTL = null;
@@ -873,7 +856,7 @@ export default class Game extends Container {
       this.handTL.to(this.hand, {
         x: () => toHandPos(btn).x,
         y: () => toHandPos(btn).y,
-        duration: 0.7,          // tutorial hızı
+        duration: 0.7,         
         ease: "power1.inOut",
       }, i === 0 ? 0 : "+=0.04");
     });
@@ -885,15 +868,15 @@ export default class Game extends Container {
   buildTutorialHintPanel() {
     this.tutorialHint = new Container();
 
-    // 🟢 panel bg
+    
     const bg = new Sprite(Texture.from("assets/greenPanel.png"));
     bg.anchor.set(0.5);
 
-    // boyut (görseline göre ayarlanabilir)
+    
     bg.width = 260;
     bg.height = 40;
 
-    // 📝 text
+   
     const txt = new Text("", {
       fill: 0xffffff,
       fontSize: 22,
@@ -907,9 +890,7 @@ export default class Game extends Container {
     this.tutorialHint.bg = bg;
     this.tutorialHint.txt = txt;
 
-    // 📍 KONUM (gridlerin ALTINA)
-    // grid startY senin kodunda = 60 civarıydı
-    // grid yüksekliği: 3 satır * cellSize + gap
+   
     const gridBottomY =
       this.gridStartY +
       this.gridRows * (this.cellSize + this.gap);
@@ -933,7 +914,7 @@ export default class Game extends Container {
 
     this.autoplayTimeout = setTimeout(() => {
       this.startAutoplay();
-    }, 5000); // ⏱️ tutorialdan 2 sn sonra
+    }, 5000); 
   }
   cancelAutoplay() {
     clearTimeout(this.autoplayTimeout);
@@ -958,13 +939,13 @@ export default class Game extends Container {
 
     this.isAutoplaying = true;
 
-    // tutorial timeline kapat
+   
     if (this.handTL) {
       this.handTL.kill();
       this.handTL = null;
     }
 
-    // swipe reset
+    
     this.resetSwipe();
     this.isSwiping = true;
 
@@ -973,30 +954,25 @@ export default class Game extends Container {
       return this.toLocal(gp);
     };
 
-    // -------------------------
-    // 1️⃣ İLK HARF (EL ÜSTÜNE GELİR)
-    // -------------------------
+
     const firstPos = toLocalPos(btns[0]);
     this.hand.visible = true;
     this.hand.alpha = 1;
     this.hand.position.set(firstPos.x, firstPos.y - 10);
 
-    // çizgi elin ucunda başlasın
     this.drawLine({ x: this.hand.x, y: this.hand.y });
 
-    // ilk harf EL GELDİKTEN SONRA
+   
     this.addButton(btns[0]);
 
-    // -------------------------
-    // 2️⃣ AUTOPLAY TIMELINE
-    // -------------------------
+ 
     if (this.autoplayTL) {
       this.autoplayTL.kill();
     }
 
     this.autoplayTL = gsap.timeline();
 
-    // 2. harften itibaren çizerek git
+   
     for (let i = 1; i < btns.length; i++) {
       const btn = btns[i];
       const p = toLocalPos(btn);
@@ -1007,21 +983,19 @@ export default class Game extends Container {
         duration: this.autoplayStepDuration,
         ease: "power1.inOut",
 
-        // ✋ EL HAREKET EDERKEN ÇİZGİ UZAR
+       
         onUpdate: () => {
           this.drawLine({ x: this.hand.x, y: this.hand.y });
         },
 
-        // 🔥 EL VARINCA HARF EKLENİR
+       
         onComplete: () => {
           this.addButton(btn);
         }
       });
     }
 
-    // -------------------------
-    // 3️⃣ BİTİŞ
-    // -------------------------
+   
     this.autoplayTL.call(() => {
       this.finishAutoplay();
     });
@@ -1035,7 +1009,6 @@ export default class Game extends Container {
       this.autoplayTL = null;
     }
 
-    // 🔥 son harfin seçili hali GÖRÜNSÜN
     this.isSwiping = true;
 
     gsap.delayedCall(0.18, () => {
