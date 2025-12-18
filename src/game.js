@@ -881,6 +881,9 @@ export default class Game extends Container {
     this.hand.alpha = 1;
     this.hand.position.set(firstPos.x, firstPos.y - 10);
 
+    // İlk karede çizginin görünmesi için başlangıç pozisyonunu çiz
+    this.drawLine({ x: this.hand.x, y: this.hand.y });
+
     // 🔥 2) SONRA SWIPE'I BAŞLAT (line artık doğru yerden başlar)
     this.startSwipe(btns[0], true);
 
@@ -903,6 +906,8 @@ export default class Game extends Container {
         ease: "sine.inOut",
         onStart: () => {
           this.addButton(btn);
+          // Yeni harfi hemen bağla ki çizgi parmağı beklemeden güncellensin
+          this.drawLine({ x: this.hand.x, y: this.hand.y });
         }
       });
     });
