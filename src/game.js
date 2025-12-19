@@ -29,14 +29,14 @@ export default class Game extends Container {
     super();
     this.eventMode = "static";
 
-    // Game state
+
     this.words = parseWords(levelData.lvlWords);
     this.validWords = new Set(this.words);
     this.found = new Set();
     this.isGameOver = false;
     this.isAutoplaying = false;
 
-    // Initialize managers
+
     this.ui = new UIManager();
     this.grid = new GridManager(this);
     this.tray = new TrayManager(this, levelData.lvlLetters);
@@ -48,25 +48,25 @@ export default class Game extends Container {
   }
 
   async init() {
-    // Load background
+
     const bg = await this.ui.loadBackground();
     this.addChildAt(bg, 0);
 
-    // Build grid
+
     this.addChild(this.grid.container);
     this.grid.build(this.words);
 
-    // Build tray
+
     this.addChild(this.tray.container);
     this.tray.build();
 
-    // Add swipe line to tray container
+
     this.tray.container.addChildAt(this.swipe.line, 1);
 
-    // Add word preview
+
     this.addChild(this.wordPreview.container);
 
-    // Build tutorial
+
     const tutorialHand = this.tutorial.buildHand();
     this.addChild(tutorialHand);
 
@@ -74,16 +74,16 @@ export default class Game extends Container {
     const tutorialHint = this.tutorial.buildHintPanel(gridBottomY);
     this.addChild(tutorialHint);
 
-    // Build Play Now button
+
     const playNowBtn = this.ui.createPlayNowButton();
     this.addChild(playNowBtn);
 
-    // Setup input handlers
+
     this.on("pointermove", (e) => this.swipe.onMove(e), this);
     this.on("pointerup", () => this.swipe.onUp(), this);
     this.on("pointerupoutside", () => this.swipe.onUp(), this);
 
-    // Start tutorial
+
     this.tutorial.schedule();
   }
 

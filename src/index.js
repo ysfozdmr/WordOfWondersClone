@@ -8,16 +8,15 @@ import Game from "./game";
 export const GAME_WIDTH = 480;
 export const GAME_HEIGHT = 800;
 
-// PIXI APP
 export const app = new Application({
-  backgroundColor: 0x00000000, // 🔴 TRANSPARENT (ÇOK ÖNEMLİ)
+  backgroundColor: 0x00000000, 
   antialias: true,
   hello: true,
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
 });
 
-// GSAP ticker
+
 app.ticker.stop();
 gsap.ticker.add(() => {
   app.ticker.update();

@@ -8,7 +8,7 @@ export default class GridManager {
     this.container = new Container();
     this.cells = new Map();
     this.wordToSlot = new Map();
-    
+
     this.cellSize = 72;
     this.gap = 14;
     this.gridStartY = 40;
@@ -29,7 +29,6 @@ export default class GridManager {
       MID: { id: "MID", x: 2, y: 0, dir: "V", len: 3 },
     };
 
-    // Slot assignment
     const wordList = [...words];
     const top =
       wordList.find(w => w.length === 4) ||
@@ -46,12 +45,12 @@ export default class GridManager {
     this.wordToSlot.set(mid, "MID");
     this.wordToSlot.set(bottom, "BOTTOM");
 
-    // Grid layout
+
     const cols = 4;
     const gridW = cols * this.cellSize + (cols - 1) * this.gap;
     const startX = (GAME_WIDTH - gridW) / 2 - 30;
 
-    // Create cells
+
     for (const [gx, gy] of shapeCoords) {
       const key = `${gx},${gy}`;
 
@@ -82,7 +81,7 @@ export default class GridManager {
       });
     }
 
-    // Bind slots
+
     this.bindSlot(slots.TOP, top);
     this.bindSlot(slots.LEFT, left);
     this.bindSlot(slots.MID, mid);

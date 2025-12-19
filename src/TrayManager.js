@@ -17,7 +17,7 @@ export default class TrayManager {
   build() {
     const { x: cx, y: cy } = this.trayCenter;
 
-    // Background circle
+   
     const bg = new Graphics()
       .beginFill(0xffffff)
       .drawCircle(0, 0, 120)
@@ -26,7 +26,7 @@ export default class TrayManager {
     bg.position.set(cx, cy);
     this.container.addChild(bg);
 
-    // Shuffle button
+   
     const shuffle = new Sprite(Texture.from("assets/shuffle.png"));
     shuffle.anchor.set(0.5);
     shuffle.width = 48;
@@ -38,12 +38,12 @@ export default class TrayManager {
     this.shuffleBtn = shuffle;
     this.container.addChild(shuffle);
 
-    // Create buttons
+    
     this.layoutButtons();
   }
 
   layoutButtons() {
-    // Remove old buttons
+    
     for (const b of this.buttons) {
       this.container.removeChild(b);
     }
@@ -86,7 +86,7 @@ export default class TrayManager {
       this.container.addChild(btn);
     });
 
-    // Position shuffle button
+    
     if (this.shuffleBtn) {
       this.shuffleBtn.x = this.trayCenter.x;
       this.shuffleBtn.y = this.trayCenter.y;
@@ -102,7 +102,7 @@ export default class TrayManager {
     const { x: cx, y: cy } = this.trayCenter;
     const r = this.trayRadius;
 
-    // Move to center
+    
     this.buttons.forEach((btn, i) => {
       gsap.to(btn, {
         x: cx,
@@ -113,14 +113,14 @@ export default class TrayManager {
       });
     });
 
-    // Shuffle array
+   
     const shuffledButtons = [...this.buttons];
     for (let i = shuffledButtons.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffledButtons[i], shuffledButtons[j]] = [shuffledButtons[j], shuffledButtons[i]];
     }
 
-    // Calculate new positions
+    
     const positions = this.buttons.map((_, i) => {
       const angle = (Math.PI * 2 / this.buttons.length) * i - Math.PI / 2;
       return {
@@ -129,7 +129,7 @@ export default class TrayManager {
       };
     });
 
-    // Move to new positions
+   
     gsap.delayedCall(0.28, () => {
       shuffledButtons.forEach((btn, i) => {
         gsap.to(btn, {
